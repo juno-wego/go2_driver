@@ -1,6 +1,6 @@
 # SportCmd.msg
 # High-level sport mode command for Unitree GO2
-# Maps to SportClient API IDs from unitree_sdk2_python
+# Maps to the official Unitree ROS 2 sport API IDs
 
 # Command string — one of:
 #   "damp"           → Damp (1001)
@@ -15,13 +15,20 @@
 #   "stretch"        → Stretch (1017)
 #   "dance1"         → Dance1 (1022)
 #   "dance2"         → Dance2 (1023)
+#   "static_walk"    → StaticWalk (1061)
+#   "trot_run"       → TrotRun (1062)
+#   "economic_gait"  → EconomicGait (1063)
 #   "hand_stand"     → HandStand (2044), uses flag
 #   "free_walk"      → FreeWalk (2045)
 #   "free_bound"     → FreeBound (2046), uses flag
 #   "free_jump"      → FreeJump (2047), uses flag
 #   "free_avoid"     → FreeAvoid (2048), uses flag
+#   "classic_walk"   → ClassicWalk (2049), uses flag
 #   "walk_upright"   → WalkUpright (2050), uses flag
 #   "cross_step"     → CrossStep (2051), uses flag
+#   "switch_joystick"→ SwitchJoystick (1027), uses flag
+#   "switch_avoid_mode" → SwitchAvoidMode (2058)
+#   "pose"           → Pose (1028), uses flag
 #   "left_flip"      → LeftFlip (2041)
 #   "back_flip"      → BackFlip (2043)
 #   "front_flip"     → FrontFlip (1030)

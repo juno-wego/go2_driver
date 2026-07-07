@@ -1,67 +1,59 @@
-"""
-Launch file for go2_description:
-  - Loads GO2 URDF/xacro and starts robot_state_publisher
-  - Optionally starts joint_state_publisher_gui for visualization
-"""
+from pathlib import Path
 
-import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.conditions import IfCondition
-from launch.substitutions import LaunchConfiguration, Command
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 
 
+def _launch_setup(context, *_args, **_kwargs):
+    description_file = Path(LaunchConfiguration("description_file").perform(context))
+    rviz_config = Path(LaunchConfiguration("rviz_config").perform(context))
+
+    if not description_file.exists():
+        raise FileNotFoundError(description_file)
+    if not rviz_config.exists():
+        raise FileNotFoundError(rviz_config)
+
+    robot_description = description_file.read_text()
+
+    return [
+        Node(
+            package="robot_state_publisher",
+            executable="robot_state_publisher",
+            name="robot_state_publisher",
+            output="screen",
+            parameters=[
+                {
+                    "robot_description": robot_description,
+                    "use_sim_time": LaunchConfiguration("use_sim_time"),
+                }
+            ],
+        ),
+        Node(
+            package="rviz2",
+            executable="rviz2",
+            name="rviz2",
+            arguments=["-d", str(rviz_config)],
+            output="screen",
+            condition=IfCondition(LaunchConfiguration("start_rviz")),
+        ),
+    ]
+
+
 def generate_launch_description():
-    pkg_dir = get_package_share_directory('go2_description')
+    package_share = get_package_share_directory("go2_description")
+    default_description = PathJoinSubstitution([package_share, "urdf", "go2_description.urdf"])
+    default_rviz = PathJoinSubstitution([package_share, "launch", "check_joint.rviz"])
 
-    # Prefer xacro if available, fall back to plain URDF
-    xacro_file = os.path.join(pkg_dir, 'xacro', 'robot.xacro')
-    urdf_file   = os.path.join(pkg_dir, 'urdf', 'go2_description.urdf')
-
-    use_xacro_arg = DeclareLaunchArgument(
-        'use_xacro',
-        default_value='true' if os.path.exists(xacro_file) else 'false',
-        description='Use xacro to generate URDF (requires xacro package)',
+    return LaunchDescription(
+        [
+            DeclareLaunchArgument("description_file", default_value=default_description),
+            DeclareLaunchArgument("rviz_config", default_value=default_rviz),
+            DeclareLaunchArgument("start_rviz", default_value="false"),
+            DeclareLaunchArgument("use_sim_time", default_value="false"),
+            OpaqueFunction(function=_launch_setup),
+        ]
     )
-
-    use_gui_arg = DeclareLaunchArgument(
-        'use_gui',
-        default_value='false',
-        description='Start joint_state_publisher_gui for manual joint control',
-    )
-
-    use_xacro = LaunchConfiguration('use_xacro')
-    use_gui   = LaunchConfiguration('use_gui')
-
-    # Robot description: xacro → URDF string, or plain URDF file
-    robot_description_content = Command(
-        ['xacro ', xacro_file]
-    )
-
-    robot_state_publisher_node = Node(
-        package='robot_state_publisher',
-        executable='robot_state_publisher',
-        name='robot_state_publisher',
-        output='screen',
-        parameters=[{
-            'robot_description': robot_description_content,
-            'use_sim_time': False,
-        }],
-    )
-
-    joint_state_publisher_gui_node = Node(
-        package='joint_state_publisher_gui',
-        executable='joint_state_publisher_gui',
-        name='joint_state_publisher_gui',
-        output='screen',
-        condition=IfCondition(use_gui),
-    )
-
-    return LaunchDescription([
-        use_xacro_arg,
-        use_gui_arg,
-        robot_state_publisher_node,
-        joint_state_publisher_gui_node,
-    ])

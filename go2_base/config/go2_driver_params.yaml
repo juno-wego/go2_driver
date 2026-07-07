@@ -1,23 +1,27 @@
-/**
- * go2_driver_node default parameters
- * Loaded automatically by go2_bringup.launch.py
- */
-go2_driver_node:
+go2_cmd_vel_bridge:
   ros__parameters:
-    # Network interface for DDS (empty = auto-detect)
-    # Example: "eth0", "wlan0", "enp3s0"
-    network_interface: ""
+    cmd_vel_topic: /cmd_vel
+    sport_command_topic: /go2/sport_cmd
+    low_cmd_input_topic: /go2/low_cmd
+    low_cmd_output_topic: /lowcmd
+    request_topic: /api/sport/request
+    deadband: 0.01
+    command_rate_hz: 20.0
+    cmd_timeout: 0.5
+    stop_on_timeout: true
+    auto_balance_stand_on_start: false
 
-    # Use unitree_sdk2_python DDS mode (true) or ROS2-only bridge mode (false)
-    use_sdk_mode: true
-
-    # Publish odom → base_link TF
+go2_state_bridge:
+  ros__parameters:
+    sport_state_topic: /lf/sportmodestate
+    low_state_topic: /lowstate
+    odom_topic: /go2/odom
+    imu_topic: /go2/imu
+    joint_state_topic: /go2/joint_states
+    foot_force_topic: /go2/foot_force
+    battery_topic: /go2/battery_state
+    sport_state_output_topic: /go2/sport_state
+    odom_frame: odom
+    base_frame: base_link
+    imu_frame: imu_link
     publish_tf: true
-
-    # Frame IDs
-    odom_frame: "odom"
-    base_frame: "base_link"
-
-    # /cmd_vel watchdog timeout (seconds)
-    # If no /cmd_vel received within this time, robot stops
-    cmd_vel_timeout: 0.5
