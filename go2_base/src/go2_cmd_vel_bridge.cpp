@@ -2,9 +2,8 @@
 #include <cctype>
 #include <cmath>
 #include <functional>
+#include <sstream>
 #include <string>
-
-#include <nlohmann/json.hpp>
 
 #include "geometry_msgs/msg/twist.hpp"
 #include "go2_interface/msg/sport_cmd.hpp"
@@ -64,6 +63,23 @@ std::string normalize_command(std::string command)
     command.begin(), command.end(), command.begin(),
     [](unsigned char c) {return static_cast<char>(std::tolower(c));});
   return command;
+}
+
+std::string make_xyz_payload(double x, double y, double z)
+{
+  std::ostringstream stream;
+  stream << "{\"x\":" << x << ",\"y\":" << y << ",\"z\":" << z << "}";
+  return stream.str();
+}
+
+std::string make_data_payload(bool data)
+{
+  return std::string("{\"data\":") + (data ? "true" : "false") + "}";
+}
+
+std::string make_data_payload(int32_t data)
+{
+  return "{\"data\":" + std::to_string(data) + "}";
 }
 }  // namespace
 
@@ -129,31 +145,24 @@ public:
   }
 
 private:
-  void publish_motion_request(
-    int32_t api_id, const nlohmann::json & payload = nlohmann::json::object())
+  void publish_motion_request(int32_t api_id, const std::string & payload = "")
   {
     unitree_api::msg::Request request;
     request.header.identity.api_id = api_id;
     if (!payload.empty()) {
-      request.parameter = payload.dump();
+      request.parameter = payload;
     }
     request_pub_->publish(request);
   }
 
   void publish_move(double vx, double vy, double vyaw)
   {
-    nlohmann::json payload;
-    payload["x"] = vx;
-    payload["y"] = vy;
-    payload["z"] = vyaw;
-    publish_motion_request(kApiMove, payload);
+    publish_motion_request(kApiMove, make_xyz_payload(vx, vy, vyaw));
   }
 
   void publish_bool_request(int32_t api_id, bool flag)
   {
-    nlohmann::json payload;
-    payload["data"] = flag;
-    publish_motion_request(api_id, payload);
+    publish_motion_request(api_id, make_data_payload(flag));
   }
 
   bool dispatch_named_command(const go2_interface::msg::SportCmd & msg)
@@ -306,17 +315,11 @@ private:
       return true;
     }
     if (command == "euler") {
-      nlohmann::json payload;
-      payload["x"] = msg.roll;
-      payload["y"] = msg.pitch;
-      payload["z"] = msg.yaw;
-      publish_motion_request(kApiEuler, payload);
+      publish_motion_request(kApiEuler, make_xyz_payload(msg.roll, msg.pitch, msg.yaw));
       return true;
     }
     if (command == "speed_level") {
-      nlohmann::json payload;
-      payload["data"] = msg.speed_level;
-      publish_motion_request(kApiSpeedLevel, payload);
+      publish_motion_request(kApiSpeedLevel, make_data_payload(msg.speed_level));
       return true;
     }
 
