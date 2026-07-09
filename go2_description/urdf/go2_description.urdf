@@ -751,6 +751,62 @@
     <child link="radar" />
     <axis xyz="0 0 0" />
   </joint>
+  <link name="utlidar_lidar">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.035" length="0.04" />
+      </geometry>
+      <material name="utlidar_black">
+        <color rgba="0.02 0.02 0.02 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.035" length="0.04" />
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.001" />
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
+    </inertial>
+  </link>
+  <joint name="utlidar_lidar_joint" type="fixed">
+    <origin xyz="0.28945 0 -0.046825" rpy="0 2.8782 0" />
+    <parent link="base" />
+    <child link="utlidar_lidar" />
+    <axis xyz="0 0 0" />
+  </joint>
+  <link name="hesai_lidar">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.05" length="0.075" />
+      </geometry>
+      <material name="hesai_dark">
+        <color rgba="0.04 0.04 0.045 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.05" length="0.075" />
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.001" />
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
+    </inertial>
+  </link>
+  <joint name="hesai_lidar_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0" />
+    <parent link="base" />
+    <child link="hesai_lidar" />
+    <axis xyz="0 0 0" />
+  </joint>
   <joint name="front_camera_joint" type="fixed">
     <origin rpy="0 0 0" xyz="0.32715 -0.00003 0.04297" />
       <parent link="base" />
