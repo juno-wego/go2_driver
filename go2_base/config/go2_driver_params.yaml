@@ -26,3 +26,4 @@ go2_state_bridge:
     base_frame: base_link
     imu_frame: imu_link
     publish_tf: true
+    rebase_odom_on_start: false

@@ -1,4 +1,5 @@
 #include <array>
+#include <cmath>
 #include <functional>
 #include <memory>
 #include <string>
@@ -41,6 +42,8 @@ public:
     base_frame_ = declare_parameter<std::string>("base_frame", "base_link");
     imu_frame_ = declare_parameter<std::string>("imu_frame", "imu_link");
     publish_tf_ = declare_parameter<bool>("publish_tf", true);
+    rebase_odom_on_start_ =
+      declare_parameter<bool>("rebase_odom_on_start", false);
 
     auto sensor_qos = rclcpp::QoS(rclcpp::KeepLast(1)).best_effort();
     auto reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
@@ -87,10 +90,34 @@ private:
     odom.header.stamp = stamp;
     odom.header.frame_id = odom_frame_;
     odom.child_frame_id = base_frame_;
-    odom.pose.pose.position.x = msg->position[0];
-    odom.pose.pose.position.y = msg->position[1];
-    odom.pose.pose.position.z = msg->position[2];
     fill_quaternion(msg->imu_state.quaternion, odom.pose.pose.orientation);
+
+    if (rebase_odom_on_start_) {
+      if (!odom_origin_initialized_) {
+        odom_origin_x_ = msg->position[0];
+        odom_origin_y_ = msg->position[1];
+        odom_origin_yaw_ = quaternion_yaw(odom.pose.pose.orientation);
+        odom_origin_initialized_ = true;
+        RCLCPP_INFO(
+          get_logger(),
+          "Rebasing odometry at x=%.3f y=%.3f yaw=%.1f deg.",
+          odom_origin_x_, odom_origin_y_,
+          odom_origin_yaw_ * 180.0 / 3.14159265358979323846);
+      }
+
+      const double dx = msg->position[0] - odom_origin_x_;
+      const double dy = msg->position[1] - odom_origin_y_;
+      const double c = std::cos(-odom_origin_yaw_);
+      const double s = std::sin(-odom_origin_yaw_);
+      odom.pose.pose.position.x = c * dx - s * dy;
+      odom.pose.pose.position.y = s * dx + c * dy;
+      rotate_quaternion_about_z(
+        -odom_origin_yaw_, odom.pose.pose.orientation);
+    } else {
+      odom.pose.pose.position.x = msg->position[0];
+      odom.pose.pose.position.y = msg->position[1];
+    }
+    odom.pose.pose.position.z = msg->position[2];
     odom.twist.twist.linear.x = msg->velocity[0];
     odom.twist.twist.linear.y = msg->velocity[1];
     odom.twist.twist.linear.z = msg->velocity[2];
@@ -169,6 +196,29 @@ private:
     ros_q.z = unitree_q[3];
   }
 
+  double quaternion_yaw(
+    const geometry_msgs::msg::Quaternion & q) const
+  {
+    return std::atan2(
+      2.0 * (q.w * q.z + q.x * q.y),
+      1.0 - 2.0 * (q.y * q.y + q.z * q.z));
+  }
+
+  void rotate_quaternion_about_z(
+    const double yaw,
+    geometry_msgs::msg::Quaternion & q) const
+  {
+    const double half_yaw = yaw * 0.5;
+    const double offset_w = std::cos(half_yaw);
+    const double offset_z = std::sin(half_yaw);
+    const geometry_msgs::msg::Quaternion input = q;
+
+    q.w = offset_w * input.w - offset_z * input.z;
+    q.x = offset_w * input.x - offset_z * input.y;
+    q.y = offset_w * input.y + offset_z * input.x;
+    q.z = offset_w * input.z + offset_z * input.w;
+  }
+
   const std::vector<std::string> joint_names_{
     "FR_hip_joint", "FR_thigh_joint", "FR_calf_joint",
     "FL_hip_joint", "FL_thigh_joint", "FL_calf_joint",
@@ -188,6 +238,11 @@ private:
   std::string base_frame_;
   std::string imu_frame_;
   bool publish_tf_{true};
+  bool rebase_odom_on_start_{false};
+  bool odom_origin_initialized_{false};
+  double odom_origin_x_{0.0};
+  double odom_origin_y_{0.0};
+  double odom_origin_yaw_{0.0};
 
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub_;

@@ -809,7 +809,8 @@
     </inertial>
   </link>
   <joint name="hesai_lidar_joint" type="fixed">
-    <origin xyz="0 0 0" rpy="0 0 0" />
+    <!-- XT16 sensor axes are mounted 90 degrees CCW from Go2 base_link. -->
+    <origin xyz="0 0 0" rpy="0 0 1.5707963267948966" />
     <parent link="base" />
     <child link="hesai_lidar" />
     <axis xyz="0 0 0" />

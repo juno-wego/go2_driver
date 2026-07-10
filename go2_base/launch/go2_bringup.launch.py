@@ -1,9 +1,12 @@
-import os
-import sys
 from pathlib import Path
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction, SetEnvironmentVariable
+from launch.actions import (
+    DeclareLaunchArgument,
+    IncludeLaunchDescription,
+    OpaqueFunction,
+    SetEnvironmentVariable,
+)
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
@@ -11,122 +14,134 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 
-def _activate_local_debs():
-    for parent in Path(__file__).resolve().parents:
-        local_ros = parent / ".local_ros" / "opt" / "ros" / os.environ.get("ROS_DISTRO", "humble")
-        if local_ros.exists():
-            local_ubuntu = parent / ".local_ubuntu"
-            _prepend_env("AMENT_PREFIX_PATH", str(local_ros))
-            _prepend_env("CMAKE_PREFIX_PATH", str(local_ros))
-            _prepend_env("LD_LIBRARY_PATH", str(local_ros / "lib"))
-            _prepend_env("LD_LIBRARY_PATH", str(local_ros / "lib" / "aarch64-linux-gnu"))
-            _prepend_env("PYTHONPATH", str(local_ros / "local" / "lib" / "python3.10" / "dist-packages"))
-            _prepend_env("PYTHONPATH", str(local_ros / "lib" / "python3.10" / "site-packages"))
-            sys.path.insert(0, str(local_ros / "local" / "lib" / "python3.10" / "dist-packages"))
-            sys.path.insert(0, str(local_ros / "lib" / "python3.10" / "site-packages"))
-            if local_ubuntu.exists():
-                _prepend_env("LD_LIBRARY_PATH", str(local_ubuntu / "usr" / "lib"))
-                _prepend_env("LD_LIBRARY_PATH", str(local_ubuntu / "usr" / "lib" / "aarch64-linux-gnu"))
-            break
-
-
-def _prepend_env(name, value):
-    if not value:
-        return
-    current = [item for item in os.environ.get(name, "").split(":") if item]
-    if value in current:
-        current.remove(value)
-    os.environ[name] = ":".join([value] + current)
-
-
 def _launch_setup(context, *_args, **_kwargs):
-    network_interface = LaunchConfiguration("network_interface").perform(context).strip()
-    params_file = Path(LaunchConfiguration("params_file").perform(context))
+    network_interface = (
+        LaunchConfiguration("network_interface")
+        .perform(context)
+        .strip()
+    )
+
+    params_file = Path(
+        LaunchConfiguration("params_file").perform(context)
+    )
 
     if not params_file.exists():
         raise FileNotFoundError(params_file)
 
     actions = []
 
+    # Cyclone DDS 네트워크 인터페이스 설정
     if network_interface:
         actions.extend(
             [
-                SetEnvironmentVariable("RMW_IMPLEMENTATION", "rmw_cyclonedds_cpp"),
+                SetEnvironmentVariable(
+                    "RMW_IMPLEMENTATION",
+                    "rmw_cyclonedds_cpp",
+                ),
                 SetEnvironmentVariable(
                     "CYCLONEDDS_URI",
-                    "<CycloneDDS><Domain><General><Interfaces>"
-                    f'<NetworkInterface name="{network_interface}" priority="default" multicast="default" />'
-                    "</Interfaces></General></Domain></CycloneDDS>",
+                    "<CycloneDDS>"
+                    "<Domain>"
+                    "<General>"
+                    "<Interfaces>"
+                    f'<NetworkInterface name="{network_interface}" '
+                    'priority="default" multicast="default" />'
+                    "</Interfaces>"
+                    "</General>"
+                    "</Domain>"
+                    "</CycloneDDS>",
                 ),
             ]
         )
 
+    # Go2 URDF / robot_state_publisher / RViz
     actions.append(
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 PathJoinSubstitution(
-                    [FindPackageShare("go2_description"), "launch", "go2_description.launch.py"]
+                    [
+                        FindPackageShare("go2_description"),
+                        "launch",
+                        "go2_description.launch.py",
+                    ]
                 )
             ),
             launch_arguments={
-                "description_file": LaunchConfiguration("description_file"),
+                "description_file": LaunchConfiguration(
+                    "description_file"
+                ),
                 "rviz_config": LaunchConfiguration("rviz_config"),
-                "start_rviz": LaunchConfiguration("start_rviz"),
+                "rviz": LaunchConfiguration("rviz"),
                 "use_sim_time": LaunchConfiguration("use_sim_time"),
             }.items(),
-            condition=IfCondition(LaunchConfiguration("enable_description")),
+            condition=IfCondition(
+                LaunchConfiguration("enable_description")
+            ),
         )
     )
 
+    # cmd_vel → Unitree SDK 제어 명령
     actions.append(
         Node(
             package="go2_base",
             executable="go2_cmd_vel_bridge",
             name="go2_cmd_vel_bridge",
             output="screen",
-            parameters=[str(params_file), {"use_sim_time": LaunchConfiguration("use_sim_time")}],
-            condition=IfCondition(LaunchConfiguration("enable_control")),
+            parameters=[
+                str(params_file),
+                {
+                    "use_sim_time": LaunchConfiguration(
+                        "use_sim_time"
+                    )
+                },
+            ],
+            condition=IfCondition(
+                LaunchConfiguration("enable_control")
+            ),
         )
     )
 
+    # Unitree SDK 상태 → ROS 2 토픽
     actions.append(
         Node(
             package="go2_base",
             executable="go2_state_bridge",
             name="go2_state_bridge",
             output="screen",
-            parameters=[str(params_file), {"use_sim_time": LaunchConfiguration("use_sim_time")}],
-            condition=IfCondition(LaunchConfiguration("enable_bridge")),
+            parameters=[
+                str(params_file),
+                {
+                    "use_sim_time": LaunchConfiguration(
+                        "use_sim_time"
+                    ),
+                    "rebase_odom_on_start": LaunchConfiguration(
+                        "rebase_odom_on_start"
+                    ),
+                },
+            ],
+            condition=IfCondition(
+                LaunchConfiguration("enable_bridge")
+            ),
         )
     )
 
+    # Receive XT16 UDP packets directly and publish the point cloud.
     actions.append(
         Node(
-            package="go2_base",
-            executable="restamp_pointcloud2.py",
-            name="hesai_pointcloud_restamper",
+            package="hesai_lidar",
+            executable="hesai_lidar_node",
+            name="hesai_lidar_node",
             output="screen",
-            remappings=[
-                ("cloud_in", "/rslidar_points"),
-                ("cloud_out", "/rslidar_points_restamped"),
+            parameters=[
+                {
+                    "config_path": LaunchConfiguration(
+                        "hesai_config_file"
+                    )
+                }
             ],
-            parameters=[{"use_sim_time": LaunchConfiguration("use_sim_time")}],
-            condition=IfCondition(LaunchConfiguration("enable_sensor_restamp")),
-        )
-    )
-
-    actions.append(
-        Node(
-            package="go2_base",
-            executable="restamp_pointcloud2.py",
-            name="utlidar_pointcloud_restamper",
-            output="screen",
-            remappings=[
-                ("cloud_in", "/utlidar/cloud"),
-                ("cloud_out", "/utlidar/cloud_restamped"),
-            ],
-            parameters=[{"use_sim_time": LaunchConfiguration("use_sim_time")}],
-            condition=IfCondition(LaunchConfiguration("enable_sensor_restamp")),
+            condition=IfCondition(
+                LaunchConfiguration("enable_hesai")
+            ),
         )
     )
 
@@ -134,30 +149,88 @@ def _launch_setup(context, *_args, **_kwargs):
 
 
 def generate_launch_description():
-    _activate_local_debs()
-
     default_params = PathJoinSubstitution(
-        [FindPackageShare("go2_base"), "config", "go2_driver_params.yaml"]
+        [
+            FindPackageShare("go2_base"),
+            "config",
+            "go2_driver_params.yaml",
+        ]
     )
+
     default_description = PathJoinSubstitution(
-        [FindPackageShare("go2_description"), "urdf", "go2_description.urdf"]
+        [
+            FindPackageShare("go2_description"),
+            "urdf",
+            "go2_description.urdf",
+        ]
     )
+
     default_rviz = PathJoinSubstitution(
-        [FindPackageShare("go2_description"), "launch", "check_joint.rviz"]
+        [
+            FindPackageShare("go2_description"),
+            "rviz",
+            "go2.rviz",
+        ]
+    )
+
+    default_hesai_config = PathJoinSubstitution(
+        [
+            FindPackageShare("hesai_lidar"),
+            "config",
+            "config.yaml",
+        ]
     )
 
     return LaunchDescription(
         [
-            DeclareLaunchArgument("params_file", default_value=default_params),
-            DeclareLaunchArgument("description_file", default_value=default_description),
-            DeclareLaunchArgument("rviz_config", default_value=default_rviz),
-            DeclareLaunchArgument("network_interface", default_value="eno1"),
-            DeclareLaunchArgument("start_rviz", default_value="false"),
-            DeclareLaunchArgument("enable_control", default_value="true"),
-            DeclareLaunchArgument("enable_bridge", default_value="true"),
-            DeclareLaunchArgument("enable_description", default_value="true"),
-            DeclareLaunchArgument("enable_sensor_restamp", default_value="true"),
-            DeclareLaunchArgument("use_sim_time", default_value="false"),
+            DeclareLaunchArgument(
+                "params_file",
+                default_value=default_params,
+            ),
+            DeclareLaunchArgument(
+                "description_file",
+                default_value=default_description,
+            ),
+            DeclareLaunchArgument(
+                "rviz_config",
+                default_value=default_rviz,
+            ),
+            DeclareLaunchArgument(
+                "network_interface",
+                default_value="eno1",
+            ),
+            DeclareLaunchArgument(
+                "rviz",
+                default_value="true",
+            ),
+            DeclareLaunchArgument(
+                "enable_control",
+                default_value="true",
+            ),
+            DeclareLaunchArgument(
+                "enable_bridge",
+                default_value="true",
+            ),
+            DeclareLaunchArgument(
+                "enable_description",
+                default_value="true",
+            ),
+            DeclareLaunchArgument(
+                "rebase_odom_on_start",
+                default_value="false",
+            ),
+            DeclareLaunchArgument(
+                "enable_hesai",
+                default_value="true",
+            ),
+            DeclareLaunchArgument(
+                "hesai_config_file",
+                default_value=default_hesai_config,
+            ),
+            DeclareLaunchArgument(
+                "use_sim_time",
+                default_value="false",
+            ),
             OpaqueFunction(function=_launch_setup),
         ]
     )

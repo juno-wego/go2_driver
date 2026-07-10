@@ -47,7 +47,6 @@ install(TARGETS
 )
 
 install(PROGRAMS
-  scripts/restamp_pointcloud2.py
   scripts/set_unitree_static_ip.sh
   DESTINATION lib/${PROJECT_NAME}
 )

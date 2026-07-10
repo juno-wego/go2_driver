@@ -9,6 +9,7 @@ install(DIRECTORY
   dae
   launch
   meshes
+  rviz
   urdf
   xacro
   DESTINATION share/${PROJECT_NAME}
