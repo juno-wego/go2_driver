@@ -1,3 +1,5 @@
+import os
+import sys
 from pathlib import Path
 
 from launch import LaunchDescription
@@ -7,6 +9,34 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
+
+
+def _activate_local_debs():
+    for parent in Path(__file__).resolve().parents:
+        local_ros = parent / ".local_ros" / "opt" / "ros" / os.environ.get("ROS_DISTRO", "humble")
+        if local_ros.exists():
+            local_ubuntu = parent / ".local_ubuntu"
+            _prepend_env("AMENT_PREFIX_PATH", str(local_ros))
+            _prepend_env("CMAKE_PREFIX_PATH", str(local_ros))
+            _prepend_env("LD_LIBRARY_PATH", str(local_ros / "lib"))
+            _prepend_env("LD_LIBRARY_PATH", str(local_ros / "lib" / "aarch64-linux-gnu"))
+            _prepend_env("PYTHONPATH", str(local_ros / "local" / "lib" / "python3.10" / "dist-packages"))
+            _prepend_env("PYTHONPATH", str(local_ros / "lib" / "python3.10" / "site-packages"))
+            sys.path.insert(0, str(local_ros / "local" / "lib" / "python3.10" / "dist-packages"))
+            sys.path.insert(0, str(local_ros / "lib" / "python3.10" / "site-packages"))
+            if local_ubuntu.exists():
+                _prepend_env("LD_LIBRARY_PATH", str(local_ubuntu / "usr" / "lib"))
+                _prepend_env("LD_LIBRARY_PATH", str(local_ubuntu / "usr" / "lib" / "aarch64-linux-gnu"))
+            break
+
+
+def _prepend_env(name, value):
+    if not value:
+        return
+    current = [item for item in os.environ.get(name, "").split(":") if item]
+    if value in current:
+        current.remove(value)
+    os.environ[name] = ":".join([value] + current)
 
 
 def _launch_setup(context, *_args, **_kwargs):
@@ -70,10 +100,42 @@ def _launch_setup(context, *_args, **_kwargs):
         )
     )
 
+    actions.append(
+        Node(
+            package="go2_base",
+            executable="restamp_pointcloud2.py",
+            name="hesai_pointcloud_restamper",
+            output="screen",
+            remappings=[
+                ("cloud_in", "/rslidar_points"),
+                ("cloud_out", "/rslidar_points_restamped"),
+            ],
+            parameters=[{"use_sim_time": LaunchConfiguration("use_sim_time")}],
+            condition=IfCondition(LaunchConfiguration("enable_sensor_restamp")),
+        )
+    )
+
+    actions.append(
+        Node(
+            package="go2_base",
+            executable="restamp_pointcloud2.py",
+            name="utlidar_pointcloud_restamper",
+            output="screen",
+            remappings=[
+                ("cloud_in", "/utlidar/cloud"),
+                ("cloud_out", "/utlidar/cloud_restamped"),
+            ],
+            parameters=[{"use_sim_time": LaunchConfiguration("use_sim_time")}],
+            condition=IfCondition(LaunchConfiguration("enable_sensor_restamp")),
+        )
+    )
+
     return actions
 
 
 def generate_launch_description():
+    _activate_local_debs()
+
     default_params = PathJoinSubstitution(
         [FindPackageShare("go2_base"), "config", "go2_driver_params.yaml"]
     )
@@ -94,6 +156,7 @@ def generate_launch_description():
             DeclareLaunchArgument("enable_control", default_value="true"),
             DeclareLaunchArgument("enable_bridge", default_value="true"),
             DeclareLaunchArgument("enable_description", default_value="true"),
+            DeclareLaunchArgument("enable_sensor_restamp", default_value="true"),
             DeclareLaunchArgument("use_sim_time", default_value="false"),
             OpaqueFunction(function=_launch_setup),
         ]
