@@ -102,7 +102,7 @@ def generate_launch_description():
         [
             DeclareLaunchArgument("description_file", default_value=default_description),
             DeclareLaunchArgument("rviz_config", default_value=default_rviz),
-            DeclareLaunchArgument("network_interface", default_value=""),
+            DeclareLaunchArgument("network_interface", default_value="eno1"),
             DeclareLaunchArgument("start_rviz", default_value="false"),
             DeclareLaunchArgument("use_sim_time", default_value="false"),
             OpaqueFunction(function=_launch_setup),

@@ -151,7 +151,7 @@ def generate_launch_description():
             DeclareLaunchArgument("params_file", default_value=default_params),
             DeclareLaunchArgument("description_file", default_value=default_description),
             DeclareLaunchArgument("rviz_config", default_value=default_rviz),
-            DeclareLaunchArgument("network_interface", default_value=""),
+            DeclareLaunchArgument("network_interface", default_value="eno1"),
             DeclareLaunchArgument("start_rviz", default_value="false"),
             DeclareLaunchArgument("enable_control", default_value="true"),
             DeclareLaunchArgument("enable_bridge", default_value="true"),
