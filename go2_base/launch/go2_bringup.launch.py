@@ -131,9 +131,9 @@ def _launch_setup(context, *_args, **_kwargs):
     # Receive XT16 UDP packets directly and publish the point cloud.
     actions.append(
         Node(
-            package="hesai_lidar",
-            executable="hesai_lidar_node",
-            name="hesai_lidar_node",
+            package="hesai_ros_driver",
+            executable="hesai_ros_driver_node",
+            name="hesai_ros_driver_node",
             output="screen",
             parameters=[
                 {
@@ -178,7 +178,7 @@ def generate_launch_description():
 
     default_hesai_config = PathJoinSubstitution(
         [
-            FindPackageShare("hesai_lidar"),
+            FindPackageShare("hesai_ros_driver"),
             "config",
             "config.yaml",
         ]
