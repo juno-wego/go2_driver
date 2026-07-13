@@ -34,7 +34,6 @@ iface="$1"
 address="${2:-192.168.123.99/24}"
 netplan_dir="/etc/netplan"
 netplan_file="${netplan_dir}/99-unitree-${iface}.yaml"
-backup_suffix
 backup_suffix="$(date +%Y%m%d%H%M%S)"
 
 if ! command -v netplan >/dev/null 2>&1; then

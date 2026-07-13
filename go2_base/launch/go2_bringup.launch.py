@@ -71,6 +71,9 @@ def _launch_setup(context, *_args, **_kwargs):
                     "description_file"
                 ),
                 "rviz_config": LaunchConfiguration("rviz_config"),
+                "network_interface": LaunchConfiguration(
+                    "network_interface"
+                ),
                 "rviz": LaunchConfiguration("rviz"),
                 "use_sim_time": LaunchConfiguration("use_sim_time"),
             }.items(),

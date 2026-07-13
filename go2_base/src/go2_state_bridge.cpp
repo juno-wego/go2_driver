@@ -29,9 +29,7 @@ public:
     odom_topic_ = declare_parameter<std::string>("odom_topic", "/go2/odom");
     imu_topic_ = declare_parameter<std::string>("imu_topic", "/go2/imu");
     joint_state_topic_ =
-      declare_parameter<std::string>("joint_state_topic", "/go2/joint_states");
-    joint_state_alias_topic_ =
-      declare_parameter<std::string>("joint_state_alias_topic", "/joint_states");
+      declare_parameter<std::string>("joint_state_topic", "/joint_states");
     foot_force_topic_ =
       declare_parameter<std::string>("foot_force_topic", "/go2/foot_force");
     battery_topic_ =
@@ -52,10 +50,6 @@ public:
     imu_pub_ = create_publisher<sensor_msgs::msg::Imu>(imu_topic_, sensor_qos);
     joint_state_pub_ =
       create_publisher<sensor_msgs::msg::JointState>(joint_state_topic_, sensor_qos);
-    if (!joint_state_alias_topic_.empty() && joint_state_alias_topic_ != joint_state_topic_) {
-      joint_state_alias_pub_ =
-        create_publisher<sensor_msgs::msg::JointState>(joint_state_alias_topic_, sensor_qos);
-    }
     foot_force_pub_ =
       create_publisher<std_msgs::msg::Int16MultiArray>(foot_force_topic_, sensor_qos);
     battery_pub_ =
@@ -170,9 +164,6 @@ private:
     }
 
     joint_state_pub_->publish(joint_state);
-    if (joint_state_alias_pub_) {
-      joint_state_alias_pub_->publish(joint_state);
-    }
 
     std_msgs::msg::Int16MultiArray foot_force;
     foot_force.data.assign(msg->foot_force.begin(), msg->foot_force.end());
@@ -230,7 +221,6 @@ private:
   std::string odom_topic_;
   std::string imu_topic_;
   std::string joint_state_topic_;
-  std::string joint_state_alias_topic_;
   std::string foot_force_topic_;
   std::string battery_topic_;
   std::string sport_state_output_topic_;
@@ -247,7 +237,6 @@ private:
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub_;
   rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
-  rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_alias_pub_;
   rclcpp::Publisher<std_msgs::msg::Int16MultiArray>::SharedPtr foot_force_pub_;
   rclcpp::Publisher<go2_interface::msg::Go2BatteryState>::SharedPtr battery_pub_;
   rclcpp::Publisher<unitree_go::msg::SportModeState>::SharedPtr sport_state_pub_;

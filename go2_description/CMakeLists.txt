@@ -5,7 +5,6 @@ find_package(ament_cmake REQUIRED)
 
 # Install all resource directories
 install(DIRECTORY
-  config
   dae
   launch
   meshes

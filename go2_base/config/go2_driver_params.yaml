@@ -17,8 +17,7 @@ go2_state_bridge:
     low_state_topic: /lowstate
     odom_topic: /go2/odom
     imu_topic: /go2/imu
-    joint_state_topic: /go2/joint_states
-    joint_state_alias_topic: /joint_states
+    joint_state_topic: /joint_states
     foot_force_topic: /go2/foot_force
     battery_topic: /go2/battery_state
     sport_state_output_topic: /go2/sport_state
