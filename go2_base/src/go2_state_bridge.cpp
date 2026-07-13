@@ -34,6 +34,8 @@ public:
       declare_parameter<std::string>("foot_force_topic", "/go2/foot_force");
     battery_topic_ =
       declare_parameter<std::string>("battery_topic", "/go2/battery_state");
+    charging_current_threshold_ =
+      declare_parameter<double>("charging_current_threshold", 0.0);
     sport_state_output_topic_ =
       declare_parameter<std::string>("sport_state_output_topic", "/go2/sport_state");
     odom_frame_ = declare_parameter<std::string>("odom_frame", "odom");
@@ -173,7 +175,11 @@ private:
     battery_state.voltage = msg->power_v;
     battery_state.current = msg->power_a;
     battery_state.soc = msg->bms_state.soc;
-    battery_state.is_charging = false;
+    // Unitree LowState does not expose a dedicated charging boolean. The
+    // published power current is defined as positive while charging.
+    battery_state.is_charging =
+      std::isfinite(msg->power_a) &&
+      static_cast<double>(msg->power_a) > charging_current_threshold_;
     battery_pub_->publish(battery_state);
   }
 
@@ -223,6 +229,7 @@ private:
   std::string joint_state_topic_;
   std::string foot_force_topic_;
   std::string battery_topic_;
+  double charging_current_threshold_{0.0};
   std::string sport_state_output_topic_;
   std::string odom_frame_;
   std::string base_frame_;
