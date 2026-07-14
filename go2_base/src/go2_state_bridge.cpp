@@ -173,13 +173,17 @@ private:
 
     go2_interface::msg::Go2BatteryState battery_state;
     battery_state.voltage = msg->power_v;
-    battery_state.current = msg->power_a;
+    // Keep the status topic readable. The message type remains float32 for
+    // compatibility, but its displayed current is rounded to two decimals.
+    battery_state.current = static_cast<float>(
+      std::round(msg->power_a * 100.0F) / 100.0F);
     battery_state.soc = msg->bms_state.soc;
-    // Unitree LowState does not expose a dedicated charging boolean. The
-    // published power current is defined as positive while charging.
+    // Unitree LowState does not expose a dedicated charging boolean. On Go2,
+    // power_a is negative while the battery is charging and positive while it
+    // is supplying the robot.
     battery_state.is_charging =
       std::isfinite(msg->power_a) &&
-      static_cast<double>(msg->power_a) > charging_current_threshold_;
+      static_cast<double>(msg->power_a) < -charging_current_threshold_;
     battery_pub_->publish(battery_state);
   }
 

@@ -253,11 +253,6 @@ Visualization Manager:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        base:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
         base_link:
           Alpha: 1
           Show Axes: false
@@ -385,8 +380,6 @@ Visualization Manager:
           Value: true
         RR_thigh_rotor:
           Value: true
-        base:
-          Value: true
         base_link:
           Value: true
         front_camera:
@@ -413,83 +406,82 @@ Visualization Manager:
       Tree:
         odom:
           base_link:
-            base:
-              FL_hip:
-                FL_thigh:
-                  FL_calf:
-                    FL_calflower:
-                      FL_calflower1:
-                        {}
-                    FL_foot:
+            FL_hip:
+              FL_thigh:
+                FL_calf:
+                  FL_calflower:
+                    FL_calflower1:
                       {}
-                  FL_calf_rotor:
+                  FL_foot:
                     {}
-                FL_thigh_rotor:
+                FL_calf_rotor:
                   {}
-              FL_hip_rotor:
+              FL_thigh_rotor:
                 {}
-              FR_hip:
-                FR_thigh:
-                  FR_calf:
-                    FR_calflower:
-                      FR_calflower1:
-                        {}
-                    FR_foot:
+            FL_hip_rotor:
+              {}
+            FR_hip:
+              FR_thigh:
+                FR_calf:
+                  FR_calflower:
+                    FR_calflower1:
                       {}
-                  FR_calf_rotor:
+                  FR_foot:
                     {}
-                FR_thigh_rotor:
+                FR_calf_rotor:
                   {}
-              FR_hip_rotor:
+              FR_thigh_rotor:
                 {}
-              Head_upper:
-                Head_lower:
-                  {}
-              RL_hip:
-                RL_thigh:
-                  RL_calf:
-                    RL_calflower:
-                      RL_calflower1:
-                        {}
-                    RL_foot:
+            FR_hip_rotor:
+              {}
+            Head_upper:
+              Head_lower:
+                {}
+            RL_hip:
+              RL_thigh:
+                RL_calf:
+                  RL_calflower:
+                    RL_calflower1:
                       {}
-                  RL_calf_rotor:
+                  RL_foot:
                     {}
-                RL_thigh_rotor:
+                RL_calf_rotor:
                   {}
-              RL_hip_rotor:
+              RL_thigh_rotor:
                 {}
-              RR_hip:
-                RR_thigh:
-                  RR_calf:
-                    RR_calflower:
-                      RR_calflower1:
-                        {}
-                    RR_foot:
+            RL_hip_rotor:
+              {}
+            RR_hip:
+              RR_thigh:
+                RR_calf:
+                  RR_calflower:
+                    RR_calflower1:
                       {}
-                  RR_calf_rotor:
+                  RR_foot:
                     {}
-                RR_thigh_rotor:
+                RR_calf_rotor:
                   {}
-              RR_hip_rotor:
+              RR_thigh_rotor:
                 {}
-              front_camera:
+            RR_hip_rotor:
+              {}
+            front_camera:
+              {}
+            hesai_lidar:
+              Pandar64:
                 {}
-              hesai_lidar:
-                Pandar64:
-                  {}
-                PandarXT-32:
-                  {}
-                pandar:
-                  {}
-                rslidar:
-                  {}
-              imu:
+              PandarXT-32:
                 {}
-              radar:
+              pandar:
                 {}
-              utlidar_lidar:
+              rslidar:
                 {}
+            imu:
+              {}
+            radar:
+              {}
+            utlidar_lidar:
+              {}
       Update Interval: 0
       Value: true
     - Alpha: 1

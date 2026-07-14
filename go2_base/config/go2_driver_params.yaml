@@ -21,9 +21,9 @@ go2_state_bridge:
     foot_force_topic: /go2/foot_force
     battery_topic: /go2/battery_state
 
-    # power_a가 이 값(A)보다 크면 충전 중으로 판단합니다.
-    # Unitree LowState에는 전용 충전 boolean이 없어 전류 부호를 사용합니다.
-    charging_current_threshold: 0.0
+    # power_a가 이 값(A)보다 작으면 충전 중으로 판단합니다.
+    # Go2는 충전 중 power_a가 음수이며, 작은 전류 노이즈는 무시합니다.
+    charging_current_threshold: 0.1
 
     sport_state_output_topic: /go2/sport_state
     odom_frame: odom
