@@ -101,6 +101,7 @@ public:
     command_rate_hz_ = declare_parameter<double>("command_rate_hz", 20.0);
     cmd_timeout_ = declare_parameter<double>("cmd_timeout", 0.5);
     stop_on_timeout_ = declare_parameter<bool>("stop_on_timeout", true);
+    timeout_use_stop_move_ = declare_parameter<bool>("timeout_use_stop_move", true);
     auto_balance_stand_ = declare_parameter<bool>("auto_balance_stand_on_start", false);
 
     request_pub_ = create_publisher<unitree_api::msg::Request>(request_topic_, rclcpp::QoS(10));
@@ -113,7 +114,7 @@ public:
         last_cmd_ = *msg;
         last_cmd_time_ = now();
         have_cmd_ = true;
-        sent_timeout_stop_ = false;
+        sent_timeout_command_ = false;
       });
     sport_cmd_sub_ = create_subscription<go2_interface::msg::SportCmd>(
       sport_command_topic_, rclcpp::QoS(10),
@@ -182,7 +183,7 @@ private:
     }
     if (command == "stop_move") {
       have_cmd_ = false;
-      sent_timeout_stop_ = true;
+      sent_timeout_command_ = true;
       publish_motion_request(kApiStopMove);
       return true;
     }
@@ -342,16 +343,22 @@ private:
 
     const auto age = (now() - last_cmd_time_).seconds();
     if (age > cmd_timeout_) {
-      if (stop_on_timeout_ && !sent_timeout_stop_) {
-        publish_motion_request(kApiStopMove);
-        sent_timeout_stop_ = true;
-        RCLCPP_WARN_THROTTLE(
-          get_logger(), *get_clock(), 2000, "cmd_vel timed out; sent StopMove.");
+      if (stop_on_timeout_ && !sent_timeout_command_) {
+        if (timeout_use_stop_move_) {
+          publish_motion_request(kApiStopMove);
+          RCLCPP_WARN_THROTTLE(
+            get_logger(), *get_clock(), 2000, "cmd_vel timed out; sent StopMove.");
+        } else {
+          publish_move(0.0, 0.0, 0.0);
+          RCLCPP_WARN_THROTTLE(
+            get_logger(), *get_clock(), 2000, "cmd_vel timed out; sent zero Move command.");
+        }
+        sent_timeout_command_ = true;
       }
       return;
     }
 
-    sent_timeout_stop_ = false;
+    sent_timeout_command_ = false;
     publish_move(
       apply_deadband(last_cmd_.linear.x, deadband_),
       apply_deadband(last_cmd_.linear.y, deadband_),
@@ -367,9 +374,10 @@ private:
   double command_rate_hz_{20.0};
   double cmd_timeout_{0.5};
   bool stop_on_timeout_{true};
+  bool timeout_use_stop_move_{true};
   bool auto_balance_stand_{false};
   bool have_cmd_{false};
-  bool sent_timeout_stop_{false};
+  bool sent_timeout_command_{false};
   geometry_msgs::msg::Twist last_cmd_;
   rclcpp::Time last_cmd_time_;
   rclcpp::Publisher<unitree_api::msg::Request>::SharedPtr request_pub_;
