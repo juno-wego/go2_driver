@@ -12,7 +12,7 @@ go2_cmd_vel_bridge:
     # false이면 timeout 시 StopMove 대신 0 속도 Move를 한 번 보낸다.
     # Stair 보행 상태가 StopMove로 해제되는지 확인하기 위한 설정이다.
     timeout_use_stop_move: false
-    auto_balance_stand_on_start: true
+    auto_balance_stand_on_start: false
 
 go2_state_bridge:
   ros__parameters:
